@@ -1,0 +1,33 @@
+[Server]
+project = "k8s-server"
+listenAddr = "localhost:9090"
+
+[Kubenertes]
+config = "conf/mac_config.conf"
+podlogtailline = 2000
+
+[Log]
+logdir = "logs"
+logfile = "k8s-server.log"
+level = "debug"
+pattern = "development"
+maxsize = 1
+maxbackups = 3
+maxage = 7
+compress = true
+
+[User]
+adminuser = "admin"
+adminpwd = "123456"
+
+[DB]
+DbType = "mysql"
+DbHost = "127.0.0.1"
+DbPort = 3306
+DbName = "k8s_demo"
+DbUser = "luis"
+DbPwd = "qwe123"
+LogMode = false
+MaxIdleConns = 10
+MaxOpenConns = 100
+MaxLifeTime = 30

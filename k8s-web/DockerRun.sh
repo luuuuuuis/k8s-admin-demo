@@ -1,0 +1,1 @@
+docker run -it -d -p 8081:8081 --memory-swappiness=0 --name k8s-web -m 1GB --memory-swap=1GB --cpus=1 -v /Users/luis/Library/CloudStorage/OneDrive-个人/学习/运维开发之路/Projects/k8s管理系统/k8s-admin-demo/k8s-web/logs:/etc/nginx/logs k8s-web:1.0.7

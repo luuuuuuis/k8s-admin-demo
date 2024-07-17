@@ -1,0 +1,91 @@
+apiVersion: apps/v1		## 1.9.0 之前的版本使用 apps/v1beta2，可通过命令 kubectl api-versions 查看
+kind: Deployment	#指定创建资源的角色/类型
+metadata:	#资源的元数据/属性
+  name: k8s-server-deployment	#资源的名字，在同一个namespace中必须唯一
+  namespace: k8s-admin	#名称空间
+  labels:
+    name: k8s-server	#标签
+spec:
+  replicas: 3	#副本数量
+  strategy:	#更新策略
+    rollingUpdate:	#滚动升级机制，逐步替换旧有的Pod至新的版本
+      maxSurge: 1	#升级过程中最多可以⽐原先设置多出的POD数量；这里升级过程中则为3+1个Pod
+      maxUnavailable: 1	#升级过程中最多有多少个POD处于⽆法提供服务的状态，当maxSurge不为0时，该值也不能为0；这里表示Kubernetes整个升级过程中最多会有1个POD处于⽆法服务的状态
+  selector:	#定义标签选择器,部署需要管理的pod（带有该标签的的会被管理）需在pod 模板中定义
+    matchLabels:
+      app: k8s-server
+  template:	#定义Pod
+    metadata:
+      labels:	#Pod的label
+        app: k8s-server
+    spec:
+      nodeSelector:	#节点选择，不选的话会随机部署在任意工作节点
+        kubernetes.io/hostname: docker-desktop	#这里我们选择docker-desktop节点
+      containers:	#定义Pod内的容器
+      - name: k8s-server	#容器的名称
+        image: k8s-server:1.0.5	#镜像
+        imagePullPolicy: IfNotPresent	#镜像拉取策略，这里是优先使用本地镜像，本地没有则去镜像仓库获取
+#        livenessProbe:       
+#表示container是否处于live状态。如果LivenessProbe失败，LivenessProbe将会通知kubelet对应的container不健康了。随后kubelet将kill掉container，并根据RestarPolicy进行进一步的操作。默认情况下LivenessProbe在第一次检测之前初始化值为Success，如果container没有提供LivenessProbe，则也认为是Success；
+#          httpGet:
+#            path: /health #如果没有心跳检测接口就为/
+#            port: 7821
+#            scheme: HTTP
+#          initialDelaySeconds: 60 #启动后延时多久开始运行检测
+#          timeoutSeconds: 5	#探测超时时间。默认1秒，最小1秒
+#          successThreshold: 1		#探测失败后，最少连续探测成功多少次才被认定为成功。默认是1。对于liveness必须是1。最小值是1
+#          failureThreshold: 5		#探测成功后，最少连续探测失败多少次才被认定为失败。默认是3。最小值是1。
+        resources:	#资源限制
+          requests:
+            cpu: 500m	#1000mCPU = 1CPU
+            memory: 1024Mi
+          limits:
+            cpu: 1000m
+            memory: 2048Mi
+        ports:
+        - containerPort: 9090	#对service暴露端口
+          protocol: TCP
+        volumeMounts:	#挂载volumes中定义的目录或文件
+        - name: k8s-server-config	#卷的名称
+          mountPath: /app/conf/config.toml	#卷挂载在容器内的位置
+          subPath: config.toml	#指定单一文件
+        - name: k8s-mac-config
+          mountPath: /app/conf/mac_config.conf
+          subPath: mac_config.conf
+        # env:	#定义环境变量，这个字段会在后续日志采集中用到
+        #   - name: SERVICE_NAME
+        #     value: data-service
+      volumes:	#下面是对上面volumeMounts字段中声明的卷做定义
+        - name: k8s-server-config	#对应上面k8s-server-config这个卷
+          configMap:
+            name: k8s-server-config	#这里为前面生成的configMap名称
+            items:
+            - key: config.toml	#ConfigMap中的Key
+              path: config.toml	#指定目录下的一个相对路径
+        - name: k8s-mac-config
+          configMap:
+            name: k8s-mac-config
+            items:
+            - key: mac_config.conf
+              path: mac_config.conf
+
+      # imagePullSecrets:	#镜像拉取密钥
+      # - name: login		#这里为前面生成的密钥
+
+---
+
+apiVersion: v1
+kind: Service
+metadata: 	#Service的元数据
+  name: k8s-server-svc
+  namespace: k8s-admin
+  labels:
+    app: k8s-server-svc
+spec:
+  type: NodePort	#Service暴露类型
+  selector:		#Pod选择器，选择前面定义的Pod
+    app: k8s-server
+  ports:	#端口和协议
+  - port: 9090
+    targetPort: 9090
+    nodePort: 30025

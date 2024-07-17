@@ -1,0 +1,1 @@
+docker run -it -d -p 8082:8082 -p 9090:9090 --memory-swappiness=0 --name k8s-server -m 1GB --memory-swap=1GB --cpus=1 -v /Users/luis/Library/CloudStorage/OneDrive-个人/学习/运维开发之路/Projects/k8s管理系统/k8s-admin-demo/k8s-server/logs:/app/logs -v /Users/luis/Library/CloudStorage/OneDrive-个人/学习/运维开发之路/Projects/k8s管理系统/k8s-admin-demo/k8s-server/conf:/app/conf k8s-server:1.0.5
